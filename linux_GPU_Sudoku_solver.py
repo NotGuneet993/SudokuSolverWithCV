@@ -8,6 +8,11 @@ import cv2 as cv
 from random import shuffle
 from math import floor
 
+'''
+To change the board use ctrl+f and search "board.png"
+then change the letter infront to one of the following: 
+M / E / H / Mas
+'''
 
 # Function definitions 
 # I dont want the model to learn with each fit so it will be a function
