@@ -1,5 +1,11 @@
 #!/usr/bin/python3
 
+'''
+To change the board use ctrl+f and search "board.png"
+then change the letter infront to one of the following: 
+M / E / H / Mas
+'''
+
 import numpy as np
 import os
 import tensorflow as tf
@@ -8,11 +14,6 @@ import cv2 as cv
 from random import shuffle
 from math import floor
 
-'''
-To change the board use ctrl+f and search "board.png"
-then change the letter infront to one of the following: 
-M / E / H / Mas
-'''
 
 # Function definitions 
 # I dont want the model to learn with each fit so it will be a function
@@ -116,42 +117,51 @@ testx = testx.reshape((floor(len(zipped2) * 0.1), 50, 50, 1))
 trainy= tf.keras.utils.to_categorical(trainy, 10)
 testy= tf.keras.utils.to_categorical(testy, 10)
 
-# Start building the model
-model = CNN_builder()
-history = model.fit(x=trainx, y=trainy,
-          validation_data=(testx, testy),
-          epochs=100, batch_size=64)
 
-# load the image 
-img_path = "SudokuBoards/M_board.png"                       # change the name of the board right here --------------------------------
-img = cv.imread(img_path)
-img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+# Sometimes the model works and sometimes it doenst. With 10 epochs on a gpu we got time to spare so it can re-train the model
 
-# The board is not even so the coordinates need to be hardcoded
-X_cords = [(22, 143),(146, 269),(272, 393),(400, 520),(524, 646),(650, 770),(777, 898),(901, 1024),(1027, 1148)]
-Y_cords = [(458, 579),(582, 705),(708, 829),(838, 956),(960, 1082),(1086, 1206),(1213, 1334),(1337, 1460),(1463, 1584)]
+run_again = True
+while run_again:
+    # Start building the model
+    model = CNN_builder()
+    history = model.fit(x=trainx, y=trainy,
+            validation_data=(testx, testy),
+            epochs=10, batch_size=64)
 
-matrix = [[],[],[],[],[],[],[],[],[]]
+    # load the image 
+    img_path = "SudokuBoards/H_board.png"                       # change the name of the board right here ------------------------------------------------
+    img = cv.imread(img_path)
+    img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-# Traverse by slicing x[j][s&e] y[i][s&e]
-for i in range(9):
-    for j in range(9):
-        sub_img = img[Y_cords[i][0]:Y_cords[i][1], X_cords[j][0]:X_cords[j][1]]
+    # The board is not even so the coordinates need to be hardcoded
+    X_cords = [(22, 143),(146, 269),(272, 393),(400, 520),(524, 646),(650, 770),(777, 898),(901, 1024),(1027, 1148)]
+    Y_cords = [(458, 579),(582, 705),(708, 829),(838, 956),(960, 1082),(1086, 1206),(1213, 1334),(1337, 1460),(1463, 1584)]
 
-        # convert the subimage to a 50x50 picture
-        lil_img = cv.resize(sub_img, (50, 50))
+    matrix = [[],[],[],[],[],[],[],[],[]]
 
-        if np.all(lil_img == lil_img[0][0]):
-            matrix[i].append(0)
-        else:
-            lil_img = lil_img/255
-            image = np.expand_dims(lil_img, axis=0)
-            prediction = model.predict(image)
-            matrix[i].append(np.argmax(prediction))
+    # Traverse by slicing x[j][s&e] y[i][s&e]
+    for i in range(9):
+        for j in range(9):
+            sub_img = img[Y_cords[i][0]:Y_cords[i][1], X_cords[j][0]:X_cords[j][1]]
 
-print("This is the board that has been interpreted by the computer:")
-print(*matrix, sep='\n')
-print()
-solve(matrix)
+            # convert the subimage to a 50x50 picture
+            lil_img = cv.resize(sub_img, (50, 50))
+
+            if np.all(lil_img == lil_img[0][0]):
+                matrix[i].append(0)
+            else:
+                lil_img = lil_img/255
+                image = np.expand_dims(lil_img, axis=0)
+                prediction = model.predict(image)
+                matrix[i].append(np.argmax(prediction))
+
+    print("This is the board that has been interpreted by the computer:")
+    print(*matrix, sep='\n')
+    print()
+    solve(matrix)
+
+    if 0 not in matrix[0] and 0 not in matrix[1]: run_again = False
+    else: print("The model will retrain it self. It has failed to classify an image correctly :(")
+
 print("Solved board:")
 print(*matrix, sep='\n')
